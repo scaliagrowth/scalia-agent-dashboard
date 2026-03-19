@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scalia Supabase Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><h1>Mission Control</h1><p>Live info via Supabase</p></header>
+<main>
+<div class="grid" id="agent-grid"></div>
+<section id="stats"></section>
+<section id="feed"><h2>Recent activity</h2><div id="activity"></div></section>
+</main>
+<script>
+const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdG5yem9uZXNnYnd1cXF1ZWtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NjY1NTYsImV4cCI6MjA4OTQ0MjU1Nn0.mKXLWDxwaSAwoaHTsXJByk1Z7fMUarkkPfK8K2TQO4Y';
+const BASE='https://aqtnrzonesgbwuqquekb.supabase.co/rest/v1/agent_logs';
+const agents=['Radar','Edge','Verse','Kernel','Jarvis'];
+async function fetchLogs(){
+ const res=await fetch(BASE+'?select=*&order=created_at.desc&limit=200',{headers:{apikey:KEY,'Authorization':'Bearer '+KEY}});
+ const data=await res.json();
+ return data;
+}
+function renderCards(data){
+ const container=document.getElementById('agent-grid');
+ container.innerHTML='';
+ agents.forEach(name=>{
+   const entries=data.filter(e=>e.agent_name===name);
+   const card=document.createElement('article');
+   card.innerHTML=`<h3>${name}</h3><p class="role">${name==='Jarvis'?'Coordinator': name==='Radar'?'Research Analyst': name==='Edge'?'Marketing Strategist': name==='Verse'?'Content Writer':'Full Stack Developer'}</p><p>Model: ${entries[0]?.model_used||'N/A'}</p><p>Last task: ${entries[0]?.task_description||'No data yet'}</p><p>Last active: ${entries[0]?.created_at?new Date(entries[0].created_at).toLocaleString():'N/A'}</p><p>Tasks today: ${entries.filter(e=>new Date(e.created_at).toDateString()===new Date().toDateString()).length}</p>`;
+   container.appendChild(card);
+ });
+}
+function renderFeed(data){
+ const feed=document.getElementById('activity');
+ feed.innerHTML='';
+ data.slice(0,20).forEach(row=>{
+   const div=document.createElement('div');
+   div.className='feed-entry';
+   div.innerHTML=`<span class="agent">${row.agent_name}</span><span>${new Date(row.created_at).toLocaleString()}</span><p>${row.task_description||row.status}</p><span class="badge ${row.status==='failed'?'failed':'success'}">${row.status}</span>`;
+   feed.appendChild(div);
+ });
+ const stats=document.getElementById('stats');
+ stats.innerHTML=`<p>Records: ${data.length}</p><p>Success rate: ${((data.filter(r=>r.status==='completed').length/data.length)*100).toFixed(0)}%</p>`;
+}
+async function init(){
+ const data=await fetchLogs().catch(e=>{document.querySelector('main').innerHTML='<p>Error loading data</p>';});
+ if(data){renderCards(data);renderFeed(data);}
+}
+init();
+</script>
+</body>
+</html>
