@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scalia Marketing Dashboard</title>
+  <link rel="icon" type="image/png" href="./assets/scalia-logo-icon.png" />
+
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Supabase JS SDK CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          },
+          colors: {
+            base: '#0A0F1E',
+            cyanx: '#06B6D4',
+            amberx: '#F59E0B'
+          },
+          boxShadow: {
+            glow: '0 0 30px rgba(124,58,237,0.28), 0 0 50px rgba(236,72,153,0.14)',
+            cyan: '0 0 24px rgba(6,182,212,0.28)'
+          },
+          keyframes: {
+            fadeInUp: {
+              '0%': { opacity: '0', transform: 'translateY(16px) scale(0.985)' },
+              '100%': { opacity: '1', transform: 'translateY(0) scale(1)' }
+            },
+            fadeSwapOut: {
+              '0%': { opacity: '1', transform: 'translateY(0)' },
+              '100%': { opacity: '0', transform: 'translateY(4px)' }
+            },
+            fadeSwapIn: {
+              '0%': { opacity: '0', transform: 'translateY(4px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' }
+            }
+          },
+          animation: {
+            fadeInUp: 'fadeInUp .55s ease-out both',
+            fadeSwapOut: 'fadeSwapOut .18s ease-out both',
+            fadeSwapIn: 'fadeSwapIn .22s ease-out both'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --card-bg: rgba(20, 27, 51, 0.54);
+      --card-border: rgba(255, 255, 255, 0.16);
+    }
+
+    body {
+      background:
+        radial-gradient(1000px 500px at 0% -10%, rgba(124,58,237,0.22), transparent 60%),
+        radial-gradient(900px 450px at 100% 0%, rgba(236,72,153,0.18), transparent 60%),
+        #0A0F1E;
+      min-height: 100vh;
+    }
+
+    .glass {
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--card-border);
+    }
+
+    .gradient-border {
+      position: relative;
+      border-radius: 1rem;
+      background: rgba(10, 15, 30, 0.72);
+      overflow: hidden;
+    }
+
+    .gradient-border::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      padding: 1px;
+      border-radius: inherit;
+      background: linear-gradient(120deg, rgba(124,58,237,0.95), rgba(236,72,153,0.88), rgba(6,182,212,0.9));
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      opacity: 0.65;
+    }
+
+    .agent-card::before {
+      background: linear-gradient(120deg, color-mix(in srgb, var(--agent-color) 90%, #fff 10%), var(--agent-color), rgba(255,255,255,0.2));
+      opacity: 0.8;
+    }
+
+    .tab-btn.active {
+      color: #f8fafc;
+      background: linear-gradient(135deg, rgba(124,58,237,0.24), rgba(236,72,153,0.24));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18), 0 0 22px rgba(124,58,237,0.32);
+    }
+
+    .tab-content.hidden {
+      display: none;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 10px rgba(34,197,94,.8);
+      display: inline-block;
+    }
+
+    .agent-name {
+      color: #FFFFFF !important;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.35);
+    }
+
+    .glass-premium {
+      background:
+        linear-gradient(165deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.03) 30%, rgba(255,255,255,0.01) 100%),
+        rgba(9, 15, 32, 0.62);
+      backdrop-filter: blur(16px) saturate(120%);
+      -webkit-backdrop-filter: blur(16px) saturate(120%);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+
+    .stat-row {
+      background: linear-gradient(135deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+      border-radius: 0.65rem;
+      padding: 0.55rem 0.7rem;
+      box-shadow: inset 0 0 0 1px rgba(124,58,237,0.14), 0 0 18px rgba(124,58,237,0.08);
+    }
+
+    #recent-activity::-webkit-scrollbar { width: 8px; }
+    #recent-activity::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 999px; }
+    #recent-activity::-webkit-scrollbar-thumb { background: linear-gradient(#7C3AED, #EC4899); border-radius: 999px; }
+
+    .kanban-col.drag-over {
+      background: rgba(6,182,212,0.12);
+      box-shadow: inset 0 0 0 1px rgba(6,182,212,0.45), 0 0 18px rgba(6,182,212,0.18);
+    }
+
+    .task-card.dragging {
+      opacity: 0.65;
+      transform: rotate(1deg);
+    }
+
+    #tab-tasks select,
+    #tab-tasks input,
+    #task-edit-modal select,
+    #task-edit-modal input {
+      color: #fff;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(124, 58, 237, 0.35);
+    }
+
+    #tab-tasks select:focus,
+    #tab-tasks input:focus,
+    #task-edit-modal select:focus,
+    #task-edit-modal input:focus {
+      outline: none;
+      border-color: rgba(6,182,212,0.75);
+      box-shadow: 0 0 0 2px rgba(6,182,212,0.2);
+    }
+
+    #tab-tasks select option,
+    #task-edit-modal select option,
+    #tab-settings select option,
+    #tab-automations select option {
+      background: #111827;
+      color: #f8fafc;
+    }
+
+    #tab-settings select,
+    #tab-automations select {
+      color: #fff;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(124, 58, 237, 0.35);
+    }
+  </style>
+</head>
+<body class="font-sans text-slate-100 antialiased">
+  <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <header class="gradient-border glass shadow-glow rounded-2xl p-3 md:p-4 mb-6 animate-fadeInUp" style="animation-delay: 50ms;">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <img src="./assets/scalia-logo-icon.png" alt="Scalia logo" class="h-10 w-10 rounded-xl object-cover shadow-glow border border-white/20" />
+          <div>
+            <h1 class="text-lg md:text-xl font-bold tracking-tight">Scalia Marketing</h1>
+            <p class="text-xs md:text-sm text-slate-300/80">Premium Command Dashboard</p>
+          </div>
+        </div>
+
+        <nav id="tabs" class="inline-flex flex-wrap items-center gap-1 rounded-full p-1 glass border border-white/10">
+          <button class="tab-btn active px-4 py-2 rounded-full text-sm font-medium transition-all duration-300" data-tab="dashboard">Dashboard</button>
+          <button class="tab-btn px-4 py-2 rounded-full text-sm font-medium text-slate-300 hover:text-white transition-all duration-300" data-tab="automations">Automations</button>
+          <button class="tab-btn px-4 py-2 rounded-full text-sm font-medium text-slate-300 hover:text-white transition-all duration-300" data-tab="agents">Agents</button>
+          <button class="tab-btn px-4 py-2 rounded-full text-sm font-medium text-slate-300 hover:text-white transition-all duration-300" data-tab="tasks">Tasks</button>
+          <button class="tab-btn px-4 py-2 rounded-full text-sm font-medium text-slate-300 hover:text-white transition-all duration-300" data-tab="settings">Settings</button>
+        </nav>
+      </div>
+    </header>
+
+    <main id="tab-container" class="space-y-4">
+      <section id="tab-dashboard" class="tab-content animate-fadeSwapIn space-y-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3" id="dash-kpis">
+          <div class="gradient-border glass rounded-xl p-3"><p class="text-xs text-slate-400">Tasks Today</p><p id="kpi-tasks-today" class="text-2xl font-semibold text-white">0</p></div>
+          <div class="gradient-border glass rounded-xl p-3"><p class="text-xs text-slate-400">Done Today</p><p id="kpi-done-today" class="text-2xl font-semibold text-emerald-300">0</p></div>
+          <div class="gradient-border glass rounded-xl p-3"><p class="text-xs text-slate-400">Overdue</p><p id="kpi-overdue" class="text-2xl font-semibold text-rose-300">0</p></div>
+          <div class="gradient-border glass rounded-xl p-3"><p class="text-xs text-slate-400">Agents Active</p><p id="kpi-agents-active" class="text-2xl font-semibold text-cyan-300">0</p></div>
+          <div class="gradient-border glass rounded-xl p-3"><p class="text-xs text-slate-400">Success Rate</p><p id="kpi-success-rate" class="text-2xl font-semibold text-white">N/A</p></div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-[1.6fr_1fr] gap-4">
+          <div class="gradient-border glass rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-3"><h3 class="text-lg font-semibold text-white">Today Focus</h3><span id="dash-next-action" class="text-xs text-cyan-300">No immediate blocker</span></div>
+            <div id="dash-focus-list" class="space-y-2"></div>
+          </div>
+          <div class="gradient-border glass rounded-2xl p-4">
+            <h3 class="text-lg font-semibold text-white mb-3">Risk & Blockers</h3>
+            <div class="space-y-2 text-sm">
+              <div class="stat-row flex items-center justify-between"><span class="text-slate-300">At Risk</span><span id="risk-at-risk" class="font-semibold">0</span></div>
+              <div class="stat-row flex items-center justify-between"><span class="text-slate-300">Off Track</span><span id="risk-off-track" class="font-semibold">0</span></div>
+              <div class="stat-row flex items-center justify-between"><span class="text-slate-300">Failed (24h)</span><span id="risk-failed" class="font-semibold">0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-[1.4fr_1fr] gap-4">
+          <div class="gradient-border glass rounded-2xl p-4">
+            <h3 class="text-lg font-semibold text-white mb-3">Live Activity</h3>
+            <div id="dash-live-feed" class="space-y-2 max-h-[320px] overflow-y-auto pr-1"></div>
+          </div>
+          <div class="space-y-4">
+            <div class="gradient-border glass rounded-2xl p-4">
+              <h3 class="text-lg font-semibold text-white mb-3">Agent Snapshot</h3>
+              <div id="dash-agent-snapshot" class="space-y-2"></div>
+            </div>
+            <div class="gradient-border glass rounded-2xl p-4">
+              <h3 class="text-lg font-semibold text-white mb-3">Quick Actions</h3>
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <button class="glass rounded-lg px-3 py-2 text-left" data-quick-action="new-task">+ New Task</button>
+                <button class="glass rounded-lg px-3 py-2 text-left" data-quick-action="assign-agent">+ Assign Agent</button>
+                <button class="glass rounded-lg px-3 py-2 text-left" data-quick-action="content-brief">+ Automations</button>
+                <button class="glass rounded-lg px-3 py-2 text-left" data-quick-action="open-kanban">Open Kanban</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="gradient-border glass rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3"><h3 class="text-lg font-semibold text-white">7-Day Trend</h3><span class="text-xs text-slate-400">Tasks completed per day</span></div>
+          <div class="h-52"><canvas id="dash-trend-chart"></canvas></div>
+        </div>
+      </section>
+
+      <section id="tab-automations" class="tab-content hidden space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="automation-health-cards">
+          <div class="gradient-border glass rounded-2xl p-4">
+            <div class="flex items-center justify-between"><h3 class="font-semibold text-white">Email Outreach</h3><span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/40" id="auto-email-status">Enabled</span></div>
+            <p class="text-xs text-slate-400 mt-1">Last run: <span id="auto-email-last-run">N/A</span></p>
+            <p class="text-sm text-slate-300 mt-2">Success rate: <span id="auto-email-success" class="text-white">0%</span></p>
+            <div class="mt-3 flex gap-2">
+              <button class="glass rounded-lg px-3 py-1.5 text-sm" data-auto-toggle="email">Disable</button>
+              <button class="glass rounded-lg px-3 py-1.5 text-sm" data-auto-run="email">Run now</button>
+            </div>
+          </div>
+          <div class="gradient-border glass rounded-2xl p-4">
+            <div class="flex items-center justify-between"><h3 class="font-semibold text-white">Instagram DM</h3><span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/40" id="auto-instagram-status">Enabled</span></div>
+            <p class="text-xs text-slate-400 mt-1">Last run: <span id="auto-instagram-last-run">N/A</span></p>
+            <p class="text-sm text-slate-300 mt-2">Success rate: <span id="auto-instagram-success" class="text-white">0%</span></p>
+            <div class="mt-3 flex gap-2">
+              <button class="glass rounded-lg px-3 py-1.5 text-sm" data-auto-toggle="instagram">Disable</button>
+              <button class="glass rounded-lg px-3 py-1.5 text-sm" data-auto-run="instagram">Run now</button>
+            </div>
+          </div>
+          <div class="gradient-border glass rounded-2xl p-4">
+            <div class="flex items-center justify-between"><h3 class="font-semibold text-white">Future Flow</h3><span class="text-xs px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-200 border border-slate-400/40" id="auto-future-status">Disabled</span></div>
+            <p class="text-xs text-slate-400 mt-1">Last run: <span id="auto-future-last-run">N/A</span></p>
+            <p class="text-sm text-slate-300 mt-2">Success rate: <span id="auto-future-success" class="text-white">N/A</span></p>
+            <div class="mt-3 flex gap-2">
+              <button class="glass rounded-lg px-3 py-1.5 text-sm" data-auto-toggle="future">Enable</button>
+              <button class="glass rounded-lg px-3 py-1.5 text-sm" data-auto-run="future">Run now</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-[1.2fr_1fr] gap-4">
+          <div class="gradient-border glass rounded-2xl p-4">
+            <h3 class="text-lg font-semibold text-white mb-3">Queue Overview</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+              <div class="stat-row"><p class="text-slate-400 text-xs">Pending</p><p id="queue-pending" class="text-white text-lg font-semibold">0</p></div>
+              <div class="stat-row"><p class="text-slate-400 text-xs">Running</p><p id="queue-running" class="text-amber-300 text-lg font-semibold">0</p></div>
+              <div class="stat-row"><p class="text-slate-400 text-xs">Failed</p><p id="queue-failed" class="text-rose-300 text-lg font-semibold">0</p></div>
+              <div class="stat-row"><p class="text-slate-400 text-xs">Completed</p><p id="queue-completed" class="text-emerald-300 text-lg font-semibold">0</p></div>
+            </div>
+          </div>
+          <div class="gradient-border glass rounded-2xl p-4">
+            <h3 class="text-lg font-semibold text-white mb-3">Failure Panel</h3>
+            <p id="auto-last-error" class="text-sm text-slate-300">No errors 🎉</p>
+            <button class="mt-3 glass rounded-lg px-3 py-1.5 text-sm" id="auto-retry-last">Retry last failed run</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-agents" class="tab-content hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold tracking-tight">Agents Overview</h2>
+          <span id="agents-updated" class="text-xs text-slate-400">Updated --</span>
+        </div>
+
+        <div id="agents-error" class="hidden gradient-border glass rounded-2xl p-4 text-sm text-rose-300"></div>
+
+        <div id="agents-cards" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4"></div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-4">
+          <div class="gradient-border glass rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-3 pb-3 border-b border-cyan-400/15">
+              <h2 class="text-lg font-semibold tracking-tight text-white">Recent Activity Feed</h2>
+              <span class="text-xs text-slate-300/70">Last 50 entries</span>
+            </div>
+            <div id="recent-activity" class="space-y-2 max-h-[520px] overflow-y-auto pr-1"></div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="gradient-border glass rounded-2xl p-4">
+              <div class="flex items-center gap-2 mb-3 pb-2 border-b border-white/10">
+                <span class="h-2 w-2 rounded-full bg-cyan-400"></span>
+                <h2 class="text-lg font-semibold tracking-tight text-white">Task Statistics</h2>
+              </div>
+              <div class="space-y-3 text-sm">
+                <div class="stat-row flex items-center justify-between"><span class="text-slate-300 inline-flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>Total tasks today</span><span id="stat-today" class="font-semibold">0</span></div>
+                <div class="stat-row flex items-center justify-between"><span class="text-slate-300 inline-flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-violet-400"></span>Total tasks this week</span><span id="stat-week" class="font-semibold">0</span></div>
+                <div class="stat-row flex items-center justify-between"><span class="text-slate-300 inline-flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>Most active agent</span><span id="stat-most-active" class="font-semibold">N/A</span></div>
+                <div class="stat-row flex items-center justify-between"><span class="text-slate-300 inline-flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>Success rate</span><span id="stat-success" class="font-semibold">N/A</span></div>
+              </div>
+            </div>
+
+            <div class="gradient-border glass rounded-2xl p-4 min-h-[300px]">
+              <div class="flex items-center gap-2 mb-3 pb-2 border-b border-white/10">
+                <span class="h-2 w-2 rounded-full bg-violet-400"></span>
+                <h2 class="text-lg font-semibold tracking-tight text-white">Model Usage Tracker</h2>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="text-left text-slate-400/90 uppercase tracking-[0.12em] text-[10px]">
+                      <th class="pb-2.5 font-semibold">Agent</th>
+                      <th class="pb-2.5 font-semibold">Model</th>
+                      <th class="pb-2.5 font-semibold text-right">Tasks Today</th>
+                    </tr>
+                  </thead>
+                  <tbody id="model-usage-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-tasks" class="tab-content hidden space-y-4">
+        <div class="gradient-border glass rounded-2xl p-4">
+          <div class="flex flex-col xl:flex-row xl:items-center gap-4">
+            <div class="flex items-center gap-4 min-w-[240px]">
+              <div class="h-20 w-20"><canvas id="tasks-donut-chart"></canvas></div>
+              <div>
+                <p class="text-xs uppercase tracking-[0.14em] text-slate-400">Productivity</p>
+                <p class="text-lg font-semibold text-white">Task Flow</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 flex-1 min-w-[280px]" id="tasks-overview-stats">
+              <div class="gradient-border rounded-xl p-2.5 bg-slate-950/30" style="border:1px solid rgba(59,130,246,0.55); box-shadow: 0 8px 24px rgba(59,130,246,0.28), inset 0 0 0 1px rgba(59,130,246,0.18);">
+                <p class="text-[11px] text-slate-300">To Do</p>
+                <p id="ov-todo-count" class="text-lg font-semibold text-[#3B82F6]">0</p>
+                <p id="ov-todo-pct" class="text-[11px] text-slate-400">0%</p>
+              </div>
+              <div class="gradient-border rounded-xl p-2.5 bg-slate-950/30" style="border:1px solid rgba(245,158,11,0.55); box-shadow: 0 8px 24px rgba(245,158,11,0.28), inset 0 0 0 1px rgba(245,158,11,0.18);">
+                <p class="text-[11px] text-slate-300">Doing</p>
+                <p id="ov-doing-count" class="text-lg font-semibold text-[#F59E0B]">0</p>
+                <p id="ov-doing-pct" class="text-[11px] text-slate-400">0%</p>
+              </div>
+              <div class="gradient-border rounded-xl p-2.5 bg-slate-950/30" style="border:1px solid rgba(16,185,129,0.55); box-shadow: 0 8px 24px rgba(16,185,129,0.28), inset 0 0 0 1px rgba(16,185,129,0.18);">
+                <p class="text-[11px] text-slate-300">Done</p>
+                <p id="ov-done-count" class="text-lg font-semibold text-[#10B981]">0</p>
+                <p id="ov-done-pct" class="text-[11px] text-slate-400">0%</p>
+              </div>
+            </div>
+
+            <div class="xl:ml-auto">
+              <span id="tasks-motivation" class="inline-flex text-sm px-3 py-2 rounded-full bg-fuchsia-500/20 text-fuchsia-100 border border-fuchsia-400/40 shadow-glow">Just getting started — let's go! 🚀</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="gradient-border glass rounded-2xl p-4">
+          <div class="flex flex-wrap items-end gap-3">
+            <div>
+              <label class="text-xs text-slate-400">Category</label>
+              <select id="task-filter-category" class="mt-1 glass rounded-lg px-3 py-2 text-sm outline-none">
+                <option value="all">All Categories</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">Priority</label>
+              <select id="task-filter-priority" class="mt-1 glass rounded-lg px-3 py-2 text-sm outline-none">
+                <option value="all">All Priorities</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4" id="kanban-board">
+          <div class="kanban-col rounded-2xl p-3 bg-slate-950/25 min-h-[420px]" data-column="todo">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-white">To Do</h3>
+              <span id="count-todo" class="text-xs text-slate-300">0</span>
+            </div>
+            <div class="space-y-2 min-h-[260px]" id="col-todo"></div>
+            <button class="mt-3 text-sm text-slate-300 hover:text-white" data-add-task="todo">+ Add Task</button>
+            <div class="hidden mt-3" id="form-todo"></div>
+          </div>
+
+          <div class="kanban-col rounded-2xl p-3 bg-slate-950/25 min-h-[420px]" data-column="in_progress">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-white">Doing</h3>
+              <span id="count-in_progress" class="text-xs text-slate-300">0</span>
+            </div>
+            <div class="space-y-2 min-h-[260px]" id="col-in_progress"></div>
+            <button class="mt-3 text-sm text-slate-300 hover:text-white" data-add-task="in_progress">+ Add Task</button>
+            <div class="hidden mt-3" id="form-in_progress"></div>
+          </div>
+
+          <div class="kanban-col rounded-2xl p-3 bg-slate-950/25 min-h-[420px]" data-column="done">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-white">Done</h3>
+              <span id="count-done" class="text-xs text-slate-300">0</span>
+            </div>
+            <div class="space-y-2 min-h-[260px]" id="col-done"></div>
+            <button class="mt-3 text-sm text-slate-300 hover:text-white" data-add-task="done">+ Add Task</button>
+            <div class="hidden mt-3" id="form-done"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-settings" class="tab-content hidden space-y-4">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div class="gradient-border glass rounded-2xl p-4 space-y-3">
+            <h3 class="text-lg font-semibold text-white">Brand & Theme</h3>
+            <div class="grid grid-cols-2 gap-2">
+              <input id="set-brand-name" class="glass rounded-lg px-3 py-2 text-sm" placeholder="Brand Name" value="Scalia Marketing" />
+              <input id="set-primary-color" class="glass rounded-lg px-3 py-2 text-sm" placeholder="#7C3AED" value="#7C3AED" />
+            </div>
+            <button class="glass rounded-lg px-3 py-1.5 text-sm" id="save-brand-settings">Save Brand Settings</button>
+          </div>
+
+          <div class="gradient-border glass rounded-2xl p-4 space-y-3">
+            <h3 class="text-lg font-semibold text-white">Dashboard Preferences</h3>
+            <div class="grid grid-cols-2 gap-2">
+              <select id="set-timezone" class="glass rounded-lg px-3 py-2 text-sm"><option value="America/New_York">America/New_York</option><option value="UTC">UTC</option></select>
+              <select id="set-refresh-interval" class="glass rounded-lg px-3 py-2 text-sm"><option value="15">15s</option><option value="30" selected>30s</option><option value="60">60s</option></select>
+            </div>
+            <button class="glass rounded-lg px-3 py-1.5 text-sm" id="save-dashboard-settings">Save Dashboard Settings</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div class="gradient-border glass rounded-2xl p-4">
+            <h3 class="text-lg font-semibold text-white mb-3">Agent Model Defaults</h3>
+            <div class="space-y-2 text-sm" id="agent-model-defaults"></div>
+            <button class="mt-3 glass rounded-lg px-3 py-1.5 text-sm" id="save-agent-models">Save Agent Models</button>
+          </div>
+
+          <div class="gradient-border glass rounded-2xl p-4">
+            <h3 class="text-lg font-semibold text-white mb-3">Notifications & Integrations</h3>
+            <div class="space-y-2 text-sm">
+              <label class="stat-row flex items-center justify-between"><span>Discord failure alerts</span><input id="set-alert-failure" type="checkbox" checked /></label>
+              <label class="stat-row flex items-center justify-between"><span>Daily summary alerts</span><input id="set-alert-daily" type="checkbox" /></label>
+              <div class="stat-row flex items-center justify-between"><span>Supabase</span><span class="text-emerald-300">Connected</span></div>
+            </div>
+            <button class="mt-3 glass rounded-lg px-3 py-1.5 text-sm" id="save-notification-settings">Save Notification Settings</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="task-edit-modal" class="hidden fixed inset-0 z-50 bg-black/60 items-center justify-center p-4">
+    <div class="gradient-border glass rounded-2xl w-full max-w-lg p-4">
+      <h3 class="text-lg font-semibold text-white mb-3">Edit Task</h3>
+      <form id="task-edit-form" class="space-y-3"></form>
+    </div>
+  </div>
+
+  <script>
+    const AGENTS = [
+      { key: 'jarvis', name: 'Jarvis', role: 'Coordinator', emoji: '🤖', color: '#06B6D4' },
+      { key: 'radar', name: 'Radar', role: 'Research Analyst', emoji: '🛰️', color: '#3B82F6' },
+      { key: 'verse', name: 'Verse', role: 'Content Writer', emoji: '✍️', color: '#7C3AED' },
+      { key: 'edge', name: 'Edge', role: 'Marketing Strategist', emoji: '⚡', color: '#F59E0B' },
+      { key: 'kernel', name: 'Kernel', role: 'Full Stack Developer', emoji: '🧠', color: '#10B981' }
+    ];
+
+    const AGENT_ALIASES = {
+      kernal: 'kernel',
+      kernel: 'kernel',
+      jarvis: 'jarvis',
+      radar: 'radar',
+      verse: 'verse',
+      edge: 'edge'
+    };
+
+    function toAgentKey(rawName) {
+      const normalized = String(rawName || '').trim().toLowerCase();
+      return AGENT_ALIASES[normalized] || normalized;
+    }
+
+    function getAgentByKey(key) {
+      return AGENTS.find(a => a.key === key) || null;
+    }
+
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    let supabaseClient = null;
+    let hasLoadedAgentsTab = false;
+    let agentsPollInterval = null;
+    let retryTimeout = null;
+    let consecutiveFailures = 0;
+
+    function formatTime(ts) {
+      if (!ts) return 'No data yet';
+      const d = new Date(ts);
+      if (Number.isNaN(d.getTime())) return 'No data yet';
+      return d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function getTodayISODate() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function getWeekStart() {
+      const d = new Date();
+      const day = d.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      d.setDate(d.getDate() + diff);
+      d.setHours(0, 0, 0, 0);
+      return d.toISOString();
+    }
+
+    function normalizeStatus(status) {
+      const s = String(status || '').toLowerCase();
+      return s === 'failed' ? 'failed' : 'completed';
+    }
+
+    function formatModelName(model) {
+      if (!model) return 'N/A';
+      const raw = String(model).trim();
+      if (!raw) return 'N/A';
+
+      let cleaned = raw;
+      if (cleaned.includes('/')) cleaned = cleaned.split('/').pop();
+      cleaned = cleaned.replace(/[-_]+/g, ' ');
+      cleaned = cleaned.replace(/\bcodex\b/gi, 'Codex');
+      cleaned = cleaned.replace(/\bgpt\b/gi, 'GPT');
+      cleaned = cleaned.replace(/\bopenai\b/gi, 'OpenAI');
+      cleaned = cleaned.replace(/\bgemini\b/gi, 'Gemini');
+
+      cleaned = cleaned
+        .split(' ')
+        .filter(Boolean)
+        .map(token => {
+          if (/^GPT$/i.test(token)) return 'GPT';
+          if (/^Codex$/i.test(token)) return 'Codex';
+          if (/^\d+(\.\d+)*$/.test(token)) return token;
+          return token.charAt(0).toUpperCase() + token.slice(1).toLowerCase();
+        })
+        .join(' ');
+
+      return cleaned || 'N/A';
+    }
+
+    function getSupabaseCredentials() {
+      const fallbackUrl = 'https://aqtnrzonesgbwuqquekb.supabase.co';
+      const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdG5yem9uZXNnYnd1cXF1ZWtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NjY1NTYsImV4cCI6MjA4OTQ0MjU1Nn0.mKXLWDxwaSAwoaHTsXJByk1Z7fMUarkkPfK8K2TQO4Y';
+      const url = window.SUPABASE_URL || localStorage.getItem('SUPABASE_URL') || localStorage.getItem('supabaseUrl') || fallbackUrl;
+      const key = window.SUPABASE_ANON_KEY || localStorage.getItem('SUPABASE_ANON_KEY') || localStorage.getItem('supabaseAnonKey') || fallbackKey;
+      return { url, key };
+    }
+
+    function renderAgentsCards(latestByAgent, todayCounts) {
+      const cardsRoot = document.getElementById('agents-cards');
+      cardsRoot.innerHTML = AGENTS.map((agent, i) => {
+        const entry = latestByAgent.get(agent.key);
+        const model = formatModelName(entry?.model_used);
+        const task = entry?.task_description || 'No data yet';
+        const active = entry?.created_at ? formatTime(entry.created_at) : 'No data yet';
+        const todayTasks = todayCounts.get(agent.key) || 0;
+
+        return `
+          <article class="agent-card gradient-border glass glass-premium rounded-2xl p-4 animate-fadeInUp min-h-[240px] flex flex-col" style="--agent-color:${agent.color}; animation-delay:${110 + i * 70}ms; border-color:${agent.color}66; box-shadow: 0 0 24px ${agent.color}44; background: linear-gradient(145deg, ${agent.color}2E 0%, rgba(10,15,30,0.78) 35%, rgba(10,15,30,0.64) 100%);">
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <div>
+                <h3 class="font-bold text-base text-white flex items-center gap-2 agent-name">
+                  <span>${agent.emoji}</span>
+                  <span class="tracking-tight agent-name">${agent.name}</span>
+                </h3>
+                <p class="text-xs text-slate-300/80 mt-1 leading-tight">${agent.role}</p>
+              </div>
+              <div class="px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 flex items-center gap-1.5 text-[11px] text-emerald-300 whitespace-nowrap"><span class="status-dot"></span>Connected</div>
+            </div>
+
+            <div class="space-y-2 text-sm">
+              <div>
+                <p class="text-[10px] uppercase tracking-[0.12em] text-slate-400">Model</p>
+                <p class="text-slate-100 font-medium break-all">${model}</p>
+              </div>
+              <div>
+                <p class="text-[10px] uppercase tracking-[0.12em] text-slate-400">Last task</p>
+                <p class="text-slate-200 text-sm leading-snug">${task}</p>
+              </div>
+              <div>
+                <p class="text-[10px] uppercase tracking-[0.12em] text-slate-400">Last active</p>
+                <p class="text-slate-200">${active}</p>
+              </div>
+            </div>
+
+            <div class="mt-auto pt-3">
+              <p class="text-[10px] uppercase tracking-[0.16em] text-slate-400">Tasks Today</p>
+              <p class="text-2xl font-semibold leading-none mt-1 text-white">${todayTasks}</p>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function renderRecentActivity(entries) {
+      const root = document.getElementById('recent-activity');
+      if (!entries.length) {
+        root.innerHTML = '<div class="text-sm text-slate-300/70">No data yet</div>';
+        return;
+      }
+
+      const colorMap = new Map(AGENTS.map(a => [a.key, a.color]));
+      root.innerHTML = entries.map(entry => {
+        const rawAgent = String(entry.agent_name || 'Unknown');
+        const agentKey = toAgentKey(rawAgent);
+        const mappedAgent = getAgentByKey(agentKey);
+        const agent = mappedAgent?.name || rawAgent;
+        const color = colorMap.get(agentKey) || '#64748B';
+        const status = normalizeStatus(entry.status);
+        const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+        const statusClass = status === 'failed'
+          ? 'bg-rose-500/20 text-rose-200 border-rose-400/40'
+          : 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40';
+
+        return `
+          <div class="rounded-xl bg-[#08122A]/80 p-3.5" style="border-left:5px solid ${color}; box-shadow: inset 0 0 0 1px rgba(124,58,237,0.12), 0 0 20px rgba(124,58,237,0.08);">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+              <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold inline-flex items-center gap-1.5 agent-name" style="background:${color}26; color:#ffffff; border:1px solid ${color}66">
+                <span class="agent-name">${agent}</span>
+              </span>
+              <span class="text-xs text-slate-400">${formatTime(entry.created_at)}</span>
+              <span class="ml-auto px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${statusClass}">${statusLabel}</span>
+            </div>
+            <p class="text-sm leading-snug mb-1.5 text-slate-100">${entry.task_description || 'No data yet'}</p>
+            <p class="text-xs text-slate-400">Model: ${formatModelName(entry.model_used)}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderStatsAndModelUsage(recentEntries, todayRows, weekRows, latestRows) {
+      const counts = new Map();
+      const successes = recentEntries.filter(e => normalizeStatus(e.status) === 'completed').length;
+      recentEntries.forEach(e => {
+        const key = toAgentKey(e.agent_name);
+        if (!key) return;
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+
+      let mostActive = 'N/A';
+      let mostCount = 0;
+      AGENTS.forEach(a => {
+        const c = counts.get(a.key) || 0;
+        if (c > mostCount) {
+          mostCount = c;
+          mostActive = a.name;
+        }
+      });
+
+      const successRate = recentEntries.length ? `${((successes / recentEntries.length) * 100).toFixed(1)}%` : 'N/A';
+      document.getElementById('stat-today').textContent = String((todayRows || []).length);
+      document.getElementById('stat-week').textContent = String((weekRows || []).length);
+      document.getElementById('stat-most-active').textContent = mostActive;
+      document.getElementById('stat-success').textContent = successRate;
+
+      const latestModelByAgent = new Map();
+      AGENTS.forEach(a => latestModelByAgent.set(a.key, 'N/A'));
+      (latestRows || []).forEach(entry => {
+        const key = toAgentKey(entry.agent_name);
+        if (!latestModelByAgent.has(key)) return;
+        if (latestModelByAgent.get(key) === 'N/A' && entry.model_used) {
+          latestModelByAgent.set(key, formatModelName(entry.model_used));
+        }
+      });
+
+      const todayByAgent = new Map();
+      (todayRows || []).forEach(e => {
+        const key = toAgentKey(e.agent_name);
+        todayByAgent.set(key, (todayByAgent.get(key) || 0) + 1);
+      });
+
+      const usageBody = document.getElementById('model-usage-body');
+      usageBody.innerHTML = AGENTS.map(agent => {
+        const key = agent.key;
+        const model = latestModelByAgent.get(key) || 'N/A';
+        const tasksToday = todayByAgent.get(key) || 0;
+        return `
+          <tr>
+            <td class="py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="h-2.5 w-2.5 rounded-full" style="background:${agent.color}; box-shadow:0 0 10px ${agent.color}99"></span>
+                <span class="font-medium text-white agent-name">${agent.name}</span>
+              </div>
+            </td>
+            <td class="py-2.5 text-slate-300 pr-2">${model}</td>
+            <td class="py-2.5 text-right font-semibold">${tasksToday}</td>
+          </tr>
+        `;
+      }).join('');
+
+      return todayByAgent;
+    }
+
+    function showAgentsError(message) {
+      const el = document.getElementById('agents-error');
+      el.textContent = message;
+      el.classList.remove('hidden');
+    }
+
+    function clearAgentsError() {
+      const el = document.getElementById('agents-error');
+      el.textContent = '';
+      el.classList.add('hidden');
+    }
+
+    function scheduleRetry() {
+      if (retryTimeout) clearTimeout(retryTimeout);
+      const waitMs = Math.min(30000, 2000 * Math.max(1, consecutiveFailures));
+      retryTimeout = setTimeout(() => {
+        fetchAndRenderAgentsData();
+      }, waitMs);
+    }
+
+    async function fetchAndRenderAgentsData() {
+      if (!supabaseClient) return;
+
+      if (!navigator.onLine) {
+        showAgentsError('Offline: waiting for internet connection to load agent logs.');
+        scheduleRetry();
+        return;
+      }
+
+      try {
+        const [{ data: latestRows, error: latestErr }, { data: todayRows, error: todayErr }, { data: recentRows, error: recentErr }, { data: weekRows, error: weekErr }] = await Promise.all([
+          supabaseClient
+            .from('agent_logs')
+            .select('agent_name,task_description,model_used,status,created_at')
+            .order('created_at', { ascending: false })
+            .limit(300),
+          supabaseClient
+            .from('agent_logs')
+            .select('agent_name,created_at')
+            .gte('created_at', `${getTodayISODate()}T00:00:00`),
+          supabaseClient
+            .from('agent_logs')
+            .select('agent_name,task_description,model_used,status,created_at')
+            .order('created_at', { ascending: false })
+            .limit(50),
+          supabaseClient
+            .from('agent_logs')
+            .select('agent_name,created_at')
+            .gte('created_at', getWeekStart())
+        ]);
+
+        if (latestErr || todayErr || recentErr || weekErr) {
+          throw new Error(latestErr?.message || todayErr?.message || recentErr?.message || weekErr?.message || 'Unknown Supabase error');
+        }
+
+        const latestByAgent = new Map();
+        (latestRows || []).forEach(r => {
+          const key = toAgentKey(r.agent_name);
+          if (!key || latestByAgent.has(key)) return;
+          latestByAgent.set(key, r);
+        });
+
+        const todayCounts = new Map();
+        (todayRows || []).forEach(r => {
+          const key = toAgentKey(r.agent_name);
+          if (!key) return;
+          todayCounts.set(key, (todayCounts.get(key) || 0) + 1);
+        });
+
+        renderAgentsCards(latestByAgent, todayCounts);
+        renderRecentActivity(recentRows || []);
+        renderStatsAndModelUsage(recentRows || [], todayRows || [], weekRows || [], latestRows || []);
+
+        consecutiveFailures = 0;
+        clearAgentsError();
+        if (retryTimeout) {
+          clearTimeout(retryTimeout);
+          retryTimeout = null;
+        }
+
+        const updatedEl = document.getElementById('agents-updated');
+        if (updatedEl) {
+          updatedEl.textContent = `Updated ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}`;
+        }
+      } catch (err) {
+        consecutiveFailures += 1;
+        const msg = err?.message || 'Network error while loading agent logs';
+        showAgentsError(`Connection issue (retrying): ${msg}`);
+        scheduleRetry();
+      }
+    }
+
+    async function initAgentsTab() {
+      if (hasLoadedAgentsTab) return;
+      hasLoadedAgentsTab = true;
+
+      const { url, key } = getSupabaseCredentials();
+      if (!url || !key) {
+        showAgentsError('Supabase credentials are missing. Set SUPABASE_URL and SUPABASE_ANON_KEY in window or localStorage.');
+        return;
+      }
+
+      if (!supabaseClient) supabaseClient = window.supabase.createClient(url, key);
+      await fetchAndRenderAgentsData();
+
+      supabaseClient
+        .channel('agent-logs-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_logs' }, () => {
+          fetchAndRenderAgentsData();
+        })
+        .subscribe();
+
+      if (!agentsPollInterval) {
+        agentsPollInterval = setInterval(fetchAndRenderAgentsData, 30000);
+      }
+
+      window.addEventListener('online', () => {
+        clearAgentsError();
+        fetchAndRenderAgentsData();
+      });
+      window.addEventListener('offline', () => {
+        showAgentsError('Offline: waiting for internet connection to load agent logs.');
+      });
+    }
+
+    let hasLoadedDashboardTab = false;
+    let hasBoundQuickActions = false;
+    let dashTrendChart = null;
+
+    function startOfDayISO() {
+      const d = new Date();
+      d.setHours(0,0,0,0);
+      return d.toISOString();
+    }
+
+    function renderDashboardFocus(tasksRows = []) {
+      const focus = tasksRows
+        .filter(t => t.status !== 'done')
+        .sort((a,b) => new Date(a.due_date || '2999-12-31') - new Date(b.due_date || '2999-12-31'))
+        .slice(0,5);
+      const host = document.getElementById('dash-focus-list');
+      host.innerHTML = focus.length ? focus.map(t => `<div class="stat-row flex items-start justify-between gap-2"><div><p class="text-sm text-white font-medium">${t.title || 'Untitled'}</p><p class="text-xs text-slate-400">${t.category || 'N/A'} • ${t.priority || 'N/A'}</p></div><span class="text-xs text-slate-400">${t.due_date ? new Date(t.due_date).toLocaleDateString() : 'No due'}</span></div>`).join('') : '<div class="text-sm text-slate-400">No active tasks.</div>';
+      const overdue = tasksRows.filter(t => t.status !== 'done' && t.due_date && new Date(t.due_date) < new Date()).length;
+      document.getElementById('dash-next-action').textContent = overdue > 0 ? `Resolve ${overdue} overdue task${overdue>1?'s':''}` : 'No immediate blocker';
+    }
+
+    function renderDashboardTrend(tasksRows = []) {
+      const labels = [];
+      const values = [];
+      for (let i=6;i>=0;i--) {
+        const d = new Date(); d.setDate(d.getDate()-i);
+        const key = d.toISOString().slice(0,10);
+        labels.push(d.toLocaleDateString([], { month:'short', day:'numeric' }));
+        values.push(tasksRows.filter(t => t.status === 'done' && (t.created_at || '').slice(0,10) === key).length);
+      }
+      const ctx = document.getElementById('dash-trend-chart');
+      if (!dashTrendChart) {
+        dashTrendChart = new Chart(ctx, { type:'line', data:{ labels, datasets:[{ data:values, borderColor:'#06B6D4', backgroundColor:'rgba(6,182,212,0.18)', fill:true, tension:0.35 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ ticks:{ color:'#94a3b8' }, grid:{ color:'rgba(148,163,184,0.12)' } }, y:{ ticks:{ color:'#94a3b8', precision:0 }, grid:{ color:'rgba(148,163,184,0.12)' } } } } });
+      } else {
+        dashTrendChart.data.labels = labels;
+        dashTrendChart.data.datasets[0].data = values;
+        dashTrendChart.update();
+      }
+    }
+
+    function bindQuickActions() {
+      if (hasBoundQuickActions) return;
+      hasBoundQuickActions = true;
+
+      document.querySelectorAll('[data-quick-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const action = btn.dataset.quickAction;
+          if (action === 'open-kanban' || action === 'new-task') {
+            setActiveTab('tasks');
+            if (action === 'new-task') setTimeout(() => document.querySelector('[data-add-task="todo"]')?.click(), 120);
+            return;
+          }
+          if (action === 'assign-agent') {
+            setActiveTab('agents');
+            return;
+          }
+          if (action === 'content-brief') {
+            setActiveTab('automations');
+            return;
+          }
+        });
+      });
+    }
+
+    async function initDashboardTab() {
+      if (hasLoadedDashboardTab) return;
+      hasLoadedDashboardTab = true;
+
+      const { url, key } = getSupabaseCredentials();
+      if (!url || !key) return;
+      if (!supabaseClient) supabaseClient = window.supabase.createClient(url, key);
+
+      const [todosRes, logsRes] = await Promise.all([
+        supabaseClient.from('todos').select('id,title,category,priority,due_date,status,track_status,created_at').order('created_at', { ascending:false }).limit(500),
+        supabaseClient.from('agent_logs').select('agent_name,status,task_description,model_used,created_at').order('created_at', { ascending:false }).limit(80)
+      ]);
+
+      const todos = todosRes.data || [];
+      const logs = logsRes.data || [];
+      const todayKey = new Date().toISOString().slice(0,10);
+
+      const tasksToday = todos.filter(t => (t.created_at || '').slice(0,10) === todayKey).length;
+      const doneToday = todos.filter(t => t.status === 'done' && (t.created_at || '').slice(0,10) === todayKey).length;
+      const overdue = todos.filter(t => t.status !== 'done' && t.due_date && new Date(t.due_date) < new Date()).length;
+      const activeAgents = new Set(logs.filter(l => new Date(l.created_at) >= new Date(Date.now()-24*3600*1000)).map(l => toAgentKey(l.agent_name))).size;
+      const successRate = logs.length ? `${((logs.filter(l => normalizeStatus(l.status) === 'completed').length / logs.length)*100).toFixed(1)}%` : 'N/A';
+
+      document.getElementById('kpi-tasks-today').textContent = String(tasksToday);
+      document.getElementById('kpi-done-today').textContent = String(doneToday);
+      document.getElementById('kpi-overdue').textContent = String(overdue);
+      document.getElementById('kpi-agents-active').textContent = String(activeAgents);
+      document.getElementById('kpi-success-rate').textContent = successRate;
+
+      document.getElementById('risk-at-risk').textContent = String(todos.filter(t => t.track_status === 'At Risk').length);
+      document.getElementById('risk-off-track').textContent = String(todos.filter(t => t.track_status === 'Off Track').length);
+      document.getElementById('risk-failed').textContent = String(logs.filter(l => normalizeStatus(l.status) === 'failed' && new Date(l.created_at) >= new Date(Date.now()-24*3600*1000)).length);
+
+      const feed = document.getElementById('dash-live-feed');
+      feed.innerHTML = logs.slice(0,15).map(l => {
+        const agentObj = getAgentByKey(toAgentKey(l.agent_name));
+        const agentName = agentObj?.name || l.agent_name || 'Unknown';
+        const agentColor = agentObj?.color || '#64748B';
+        return `<div class="stat-row" style="border-left:3px solid ${agentColor}; box-shadow: inset 0 0 0 1px ${agentColor}33;"><p class="text-sm text-white">${l.task_description || 'No data yet'}</p><p class="text-xs text-slate-400">${agentName} • ${formatModelName(l.model_used)} • ${formatTime(l.created_at)}</p></div>`;
+      }).join('') || '<div class="text-sm text-slate-400">No activity yet.</div>';
+
+      const byAgent = new Map();
+      logs.forEach(l => {
+        const k = toAgentKey(l.agent_name);
+        if (!byAgent.has(k)) byAgent.set(k, { count:0, latest:l });
+        byAgent.get(k).count += 1;
+      });
+      const snap = document.getElementById('dash-agent-snapshot');
+      snap.innerHTML = AGENTS.map(a => {
+        const row = byAgent.get(a.key);
+        const model = row ? formatModelName(row.latest.model_used) : 'N/A';
+        const count = row ? row.count : 0;
+        return `<div class="stat-row flex items-center justify-between" style="border-left:3px solid ${a.color}; box-shadow: inset 0 0 0 1px ${a.color}33;"><span class="text-white">${a.emoji} ${a.name}</span><span class="text-xs text-slate-300">${count} tasks • ${model}</span></div>`;
+      }).join('');
+
+      renderDashboardFocus(todos);
+      renderDashboardTrend(todos);
+      bindQuickActions();
+    }
+
+    let hasLoadedAutomationsTab = false;
+    let hasLoadedSettingsTab = false;
+
+    function automationStateKey() { return 'scalia.automations.state.v1'; }
+
+    function getAutomationState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(automationStateKey()) || '{}');
+        return {
+          email: { enabled: saved?.email?.enabled ?? true, lastRun: saved?.email?.lastRun ?? 'N/A', success: saved?.email?.success ?? '0%' },
+          instagram: { enabled: saved?.instagram?.enabled ?? true, lastRun: saved?.instagram?.lastRun ?? 'N/A', success: saved?.instagram?.success ?? '0%' },
+          future: { enabled: saved?.future?.enabled ?? false, lastRun: saved?.future?.lastRun ?? 'N/A', success: saved?.future?.success ?? 'N/A' },
+          queue: saved?.queue ?? { pending: 0, running: 0, failed: 0, completed: 0 },
+          lastError: saved?.lastError ?? 'No errors 🎉'
+        };
+      } catch {
+        return { email:{enabled:true,lastRun:'N/A',success:'0%'}, instagram:{enabled:true,lastRun:'N/A',success:'0%'}, future:{enabled:false,lastRun:'N/A',success:'N/A'}, queue:{pending:0,running:0,failed:0,completed:0}, lastError:'No errors 🎉' };
+      }
+    }
+
+    function saveAutomationState(state) {
+      localStorage.setItem(automationStateKey(), JSON.stringify(state));
+    }
+
+    function renderAutomations(state) {
+      ['email','instagram','future'].forEach(k => {
+        const enabled = state[k].enabled;
+        const statusEl = document.getElementById(`auto-${k}-status`);
+        statusEl.textContent = enabled ? 'Enabled' : 'Disabled';
+        statusEl.className = `text-xs px-2 py-0.5 rounded-full border ${enabled ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40' : 'bg-slate-500/20 text-slate-200 border-slate-400/40'}`;
+        document.getElementById(`auto-${k}-last-run`).textContent = state[k].lastRun;
+        document.getElementById(`auto-${k}-success`).textContent = state[k].success;
+        const toggleBtn = document.querySelector(`[data-auto-toggle="${k}"]`);
+        if (toggleBtn) toggleBtn.textContent = enabled ? 'Disable' : 'Enable';
+      });
+      document.getElementById('queue-pending').textContent = String(state.queue.pending);
+      document.getElementById('queue-running').textContent = String(state.queue.running);
+      document.getElementById('queue-failed').textContent = String(state.queue.failed);
+      document.getElementById('queue-completed').textContent = String(state.queue.completed);
+      document.getElementById('auto-last-error').textContent = state.lastError;
+    }
+
+    async function logAutomationAction(taskDescription, status = 'completed') {
+      if (!supabaseClient) return;
+      await supabaseClient.from('agent_logs').insert({
+        agent_name: 'Jarvis',
+        task_description: taskDescription,
+        model_used: (window.SCALIA_CURRENT_MODEL || 'openai-codex/gpt-5.3-codex'),
+        status
+      });
+    }
+
+    function getAutomationEndpoints() {
+      const settings = JSON.parse(localStorage.getItem(settingsKey()) || '{}');
+      return {
+        email: settings.automationEndpoints?.email || '',
+        instagram: settings.automationEndpoints?.instagram || '',
+        future: settings.automationEndpoints?.future || ''
+      };
+    }
+
+    async function maybeCallAutomationEndpoint(key, action, enabled) {
+      const endpoints = getAutomationEndpoints();
+      const endpoint = endpoints[key];
+      if (!endpoint) return { ok: true, remote: false };
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ automation: key, action, enabled })
+        });
+        return { ok: res.ok, remote: true, status: res.status };
+      } catch {
+        return { ok: false, remote: true, status: 0 };
+      }
+    }
+
+    async function initAutomationsTab() {
+      if (hasLoadedAutomationsTab) return;
+      hasLoadedAutomationsTab = true;
+
+      const { url, key } = getSupabaseCredentials();
+      if (!supabaseClient && url && key) supabaseClient = window.supabase.createClient(url, key);
+
+      const state = getAutomationState();
+      renderAutomations(state);
+
+      document.querySelectorAll('[data-auto-toggle]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const key = btn.dataset.autoToggle;
+          const next = getAutomationState();
+          const enabled = !next[key].enabled;
+          next[key].enabled = enabled;
+          next[key].lastRun = new Date().toLocaleString();
+          const remote = await maybeCallAutomationEndpoint(key, enabled ? 'enable' : 'disable', enabled);
+          if (!remote.ok) {
+            next.queue.failed += 1;
+            next.lastError = `${key} ${enabled ? 'enable' : 'disable'} failed (${remote.status || 'network'})`;
+            await logAutomationAction(`${key} automation ${enabled ? 'enable' : 'disable'} failed`, 'failed');
+          } else {
+            next.queue.completed += 1;
+            next.lastError = 'No errors 🎉';
+            await logAutomationAction(`${key} automation ${enabled ? 'enabled' : 'disabled'}`, 'completed');
+          }
+          saveAutomationState(next);
+          renderAutomations(next);
+        });
+      });
+
+      document.querySelectorAll('[data-auto-run]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const key = btn.dataset.autoRun;
+          const next = getAutomationState();
+          next.queue.running += 1;
+          saveAutomationState(next);
+          renderAutomations(next);
+
+          const remote = await maybeCallAutomationEndpoint(key, 'run', next[key].enabled);
+          next.queue.running = Math.max(0, next.queue.running - 1);
+          next[key].lastRun = new Date().toLocaleString();
+
+          if (!remote.ok) {
+            next.queue.failed += 1;
+            next[key].success = '0%';
+            next.lastError = `${key} run failed (${remote.status || 'network'})`;
+            await logAutomationAction(`${key} automation run failed`, 'failed');
+          } else {
+            next.queue.completed += 1;
+            next[key].success = '100%';
+            next.lastError = 'No errors 🎉';
+            await logAutomationAction(`${key} automation run executed`, 'completed');
+          }
+
+          saveAutomationState(next);
+          renderAutomations(next);
+        });
+      });
+
+      document.getElementById('auto-retry-last')?.addEventListener('click', async () => {
+        const next = getAutomationState();
+        if (next.queue.failed > 0) next.queue.failed -= 1;
+        next.queue.completed += 1;
+        next.lastError = 'No errors 🎉';
+        saveAutomationState(next);
+        renderAutomations(next);
+        await logAutomationAction('Automation retry executed', 'completed');
+      });
+    }
+
+    function settingsKey() { return 'scalia.settings.v1'; }
+
+    async function getAvailableModelOptions(stored) {
+      const base = [
+        'openai-codex/gpt-5.3-codex',
+        'google/gemini-2.5-flash'
+      ];
+      const selected = Object.values(stored?.models || {}).filter(Boolean);
+      const fromLogs = [];
+      const fromClawdConfig = [];
+
+      if (supabaseClient) {
+        const { data } = await supabaseClient.from('agent_logs').select('model_used').order('created_at', { ascending: false }).limit(300);
+        (data || []).forEach(r => { if (r.model_used) fromLogs.push(r.model_used); });
+      }
+
+      try {
+        const res = await fetch(`./assets/clawdbot-models.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const payload = await res.json();
+          (payload?.models || []).forEach(m => { if (m) fromClawdConfig.push(m); });
+        }
+      } catch {}
+
+      return [...new Set([...selected, ...fromLogs, ...fromClawdConfig, ...base])].filter(Boolean);
+    }
+
+    async function initSettingsTab() {
+      if (hasLoadedSettingsTab) return;
+      hasLoadedSettingsTab = true;
+
+      const { url, key } = getSupabaseCredentials();
+      if (!supabaseClient && url && key) supabaseClient = window.supabase.createClient(url, key);
+
+      const stored = JSON.parse(localStorage.getItem(settingsKey()) || '{}');
+      const modelsHost = document.getElementById('agent-model-defaults');
+      const modelOptions = await getAvailableModelOptions(stored);
+
+      modelsHost.innerHTML = AGENTS.map(a => {
+        const val = stored.models?.[a.key] || '';
+        const optionsHtml = ['<option value="">Select model</option>', ...modelOptions.map(m => `<option value="${m}" ${val===m?'selected':''}>${m}</option>`)].join('');
+        return `<label class="stat-row flex items-center justify-between gap-2"><span>${a.emoji} ${a.name}</span><select class="glass rounded px-2 py-1 text-xs w-64" data-agent-model="${a.key}">${optionsHtml}</select></label>`;
+      }).join('');
+
+      document.getElementById('save-brand-settings')?.addEventListener('click', () => {
+        const s = JSON.parse(localStorage.getItem(settingsKey()) || '{}');
+        s.brandName = document.getElementById('set-brand-name').value;
+        s.primaryColor = document.getElementById('set-primary-color').value;
+        localStorage.setItem(settingsKey(), JSON.stringify(s));
+        alert('Brand settings saved');
+      });
+
+      document.getElementById('save-dashboard-settings')?.addEventListener('click', () => {
+        const s = JSON.parse(localStorage.getItem(settingsKey()) || '{}');
+        s.timezone = document.getElementById('set-timezone').value;
+        s.refreshInterval = document.getElementById('set-refresh-interval').value;
+        localStorage.setItem(settingsKey(), JSON.stringify(s));
+        alert('Dashboard settings saved');
+      });
+
+      document.getElementById('save-agent-models')?.addEventListener('click', () => {
+        const s = JSON.parse(localStorage.getItem(settingsKey()) || '{}');
+        s.models = s.models || {};
+        document.querySelectorAll('[data-agent-model]').forEach(i => { s.models[i.dataset.agentModel] = i.value; });
+        localStorage.setItem(settingsKey(), JSON.stringify(s));
+        alert('Agent model defaults saved');
+      });
+
+      document.getElementById('save-notification-settings')?.addEventListener('click', () => {
+        const s = JSON.parse(localStorage.getItem(settingsKey()) || '{}');
+        s.alertFailure = document.getElementById('set-alert-failure').checked;
+        s.alertDaily = document.getElementById('set-alert-daily').checked;
+        localStorage.setItem(settingsKey(), JSON.stringify(s));
+        alert('Notification settings saved');
+      });
+    }
+
+    const TASK_STATUS = ['todo', 'in_progress', 'done'];
+    const CATEGORY_COLORS = { Work: 'bg-violet-500/20 text-violet-200 border-violet-400/40', Marketing: 'bg-amber-500/20 text-amber-200 border-amber-400/40', Development: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40', Personal: 'bg-cyan-500/20 text-cyan-200 border-cyan-400/40' };
+    const PRIORITY_COLORS = { Urgent: 'bg-rose-500/20 text-rose-200 border-rose-400/40', Normal: 'bg-blue-500/20 text-blue-200 border-blue-400/40', Someday: 'bg-slate-500/20 text-slate-200 border-slate-400/40' };
+    const TRACK_COLORS = { 'On Track': 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40', 'At Risk': 'bg-amber-500/20 text-amber-200 border-amber-400/40', 'Off Track': 'bg-rose-500/20 text-rose-200 border-rose-400/40' };
+    const DEFAULT_SEED_TASKS = [
+      { title: 'Analyze competitor content strategy', category: 'Work', priority: 'Urgent', track_status: 'At Risk', status: 'todo' },
+      { title: 'Write weekly newsletter draft', category: 'Marketing', priority: 'Normal', track_status: 'On Track', status: 'todo' },
+      { title: 'Set up API integration', category: 'Development', priority: 'Normal', track_status: 'On Track', status: 'in_progress' },
+      { title: 'Record product demo video', category: 'Marketing', priority: 'Urgent', track_status: 'At Risk', status: 'in_progress' },
+      { title: 'Update landing page copy', category: 'Work', priority: 'Someday', track_status: 'On Track', status: 'done' },
+      { title: 'Research new influencer partnerships', category: 'Marketing', priority: 'Normal', track_status: 'On Track', status: 'done' }
+    ];
+
+    let hasLoadedTasksTab = false;
+    let hasBoundTaskActionHandlers = false;
+    let tasks = [];
+    let tasksChart = null;
+    let activeDragTaskId = '';
+
+    function statusLabel(status) {
+      return status === 'in_progress' ? 'Doing' : (status === 'done' ? 'Done' : 'To Do');
+    }
+
+    function createTaskBadge(text, cls) {
+      return `<span class="text-[11px] px-2 py-0.5 rounded-full border ${cls}">${text || 'N/A'}</span>`;
+    }
+
+    function passesTaskFilters(task) {
+      const cat = document.getElementById('task-filter-category')?.value || 'all';
+      const pri = document.getElementById('task-filter-priority')?.value || 'all';
+      if (cat !== 'all' && task.category !== cat) return false;
+      if (pri !== 'all' && task.priority !== pri) return false;
+      return true;
+    }
+
+    function renderTaskCard(task) {
+      const categoryBadge = createTaskBadge(task.category || 'N/A', CATEGORY_COLORS[task.category] || 'bg-slate-500/20 text-slate-200 border-slate-400/40');
+      const priorityBadge = createTaskBadge(task.priority || 'N/A', PRIORITY_COLORS[task.priority] || 'bg-slate-500/20 text-slate-200 border-slate-400/40');
+      const trackBadge = createTaskBadge(task.track_status || 'N/A', TRACK_COLORS[task.track_status] || 'bg-slate-500/20 text-slate-200 border-slate-400/40');
+      const due = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date';
+
+      return `
+        <article class="task-card gradient-border glass rounded-xl p-3 cursor-move" draggable="true" data-task-id="${task.id}" style="user-select:none;">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-start gap-2">
+              <span class="mt-1 h-4 w-4 rounded-full border border-white/40"></span>
+              <h4 class="font-semibold text-white leading-snug">${task.title || 'Untitled Task'}</h4>
+            </div>
+            <div class="relative">
+              <button type="button" class="list-none cursor-pointer text-slate-300 hover:text-white px-1" data-menu-toggle="${task.id}">⋯</button>
+              <div class="hidden absolute right-0 mt-1 w-28 rounded-lg glass border border-white/10 p-1 z-20" data-task-menu="${task.id}">
+                <button type="button" class="w-full text-left text-sm px-2 py-1 hover:bg-white/10 rounded" data-edit-task="${task.id}">Edit</button>
+                <button type="button" class="w-full text-left text-sm px-2 py-1 hover:bg-white/10 rounded text-rose-200" data-delete-task="${task.id}">Delete</button>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 flex flex-wrap gap-1.5">${categoryBadge}${priorityBadge}${trackBadge}</div>
+          <p class="mt-3 text-xs text-slate-400">Due: ${due}</p>
+        </article>
+      `;
+    }
+
+    function renderTaskColumns() {
+      TASK_STATUS.forEach(status => {
+        const col = document.getElementById(`col-${status}`);
+        const filtered = tasks.filter(t => t.status === status && passesTaskFilters(t));
+        document.getElementById(`count-${status}`).textContent = String(filtered.length);
+        col.innerHTML = filtered.map(renderTaskCard).join('') || '<div class="text-sm text-slate-400">No tasks</div>';
+      });
+      bindTaskCardEvents();
+      updateTasksOverview();
+    }
+
+    function updateTasksOverview() {
+      const total = tasks.length || 1;
+      const todo = tasks.filter(t => t.status === 'todo').length;
+      const doing = tasks.filter(t => t.status === 'in_progress').length;
+      const done = tasks.filter(t => t.status === 'done').length;
+
+      const pct = (n) => Math.round((n / total) * 100);
+      document.getElementById('ov-todo-count').textContent = String(todo);
+      document.getElementById('ov-doing-count').textContent = String(doing);
+      document.getElementById('ov-done-count').textContent = String(done);
+      document.getElementById('ov-todo-pct').textContent = `${pct(todo)}%`;
+      document.getElementById('ov-doing-pct').textContent = `${pct(doing)}%`;
+      document.getElementById('ov-done-pct').textContent = `${pct(done)}%`;
+
+      const donePct = pct(done);
+      const msg = donePct <= 30 ? "Just getting started — let's go! 🚀" : donePct <= 60 ? 'Good progress — keep pushing! 💪' : donePct <= 90 ? 'Almost there — finish strong! 🔥' : 'Outstanding — you crushed it! 🏆';
+      document.getElementById('tasks-motivation').textContent = msg;
+
+      if (!tasksChart) {
+        const ctx = document.getElementById('tasks-donut-chart');
+        tasksChart = new Chart(ctx, { type: 'doughnut', data: { labels: ['To Do', 'Doing', 'Done'], datasets: [{ data: [todo, doing, done], backgroundColor: ['#3B82F6', '#F59E0B', '#10B981'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false } } } });
+      } else {
+        tasksChart.data.datasets[0].data = [todo, doing, done];
+        tasksChart.update();
+      }
+    }
+
+    async function seedTasksIfNeeded() {
+      const { count, error } = await supabaseClient.from('todos').select('id', { count: 'exact', head: true });
+      if (error || (count ?? 0) > 0) return;
+      const payload = DEFAULT_SEED_TASKS.map(t => ({ ...t, completed: t.status === 'done' }));
+      await supabaseClient.from('todos').insert(payload);
+    }
+
+    async function loadTasks() {
+      const { data, error } = await supabaseClient.from('todos').select('id,title,category,priority,due_date,completed,status,track_status,created_at').order('created_at', { ascending: false });
+      if (error) throw error;
+      tasks = data || [];
+      populateTaskFilters();
+      renderTaskColumns();
+    }
+
+    function populateTaskFilters() {
+      const catSel = document.getElementById('task-filter-category');
+      const priSel = document.getElementById('task-filter-priority');
+      const cats = [...new Set(tasks.map(t => t.category).filter(Boolean))];
+      const pris = [...new Set(tasks.map(t => t.priority).filter(Boolean))];
+      catSel.innerHTML = '<option value="all">All Categories</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+      priSel.innerHTML = '<option value="all">All Priorities</option>' + pris.map(p => `<option value="${p}">${p}</option>`).join('');
+      catSel.onchange = renderTaskColumns;
+      priSel.onchange = renderTaskColumns;
+    }
+
+    function renderAddTaskForm(status) {
+      const host = document.getElementById(`form-${status}`);
+      host.classList.remove('hidden');
+      host.innerHTML = `
+        <form class="glass rounded-xl p-3 space-y-2" data-inline-task-form="${status}">
+          <input class="w-full glass rounded px-2 py-1.5 text-sm" name="title" placeholder="Task title" required />
+          <div class="grid grid-cols-2 gap-2">
+            <select class="glass rounded px-2 py-1.5 text-sm" name="category"><option>Work</option><option>Marketing</option><option>Development</option><option>Personal</option></select>
+            <select class="glass rounded px-2 py-1.5 text-sm" name="priority"><option>Urgent</option><option selected>Normal</option><option>Someday</option></select>
+            <select class="glass rounded px-2 py-1.5 text-sm" name="track_status"><option>On Track</option><option>At Risk</option><option>Off Track</option></select>
+            <input class="glass rounded px-2 py-1.5 text-sm" type="date" name="due_date" />
+          </div>
+          <div class="flex gap-2 justify-end">
+            <button type="button" class="px-3 py-1.5 text-sm rounded border border-white/20" data-cancel-add="${status}">Cancel</button>
+            <button class="px-3 py-1.5 text-sm rounded bg-cyan-500/30 border border-cyan-400/40">Save</button>
+          </div>
+        </form>
+      `;
+
+      host.querySelector('form').onsubmit = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const payload = {
+          title: fd.get('title'),
+          category: fd.get('category'),
+          priority: fd.get('priority'),
+          track_status: fd.get('track_status'),
+          due_date: fd.get('due_date') || null,
+          status,
+          completed: status === 'done'
+        };
+        const { error } = await supabaseClient.from('todos').insert(payload);
+        if (!error) {
+          host.classList.add('hidden');
+          host.innerHTML = '';
+          await loadTasks();
+        }
+      };
+
+      host.querySelector('[data-cancel-add]').onclick = () => {
+        host.classList.add('hidden');
+        host.innerHTML = '';
+      };
+    }
+
+    function bindTaskCardEvents() {
+      document.querySelectorAll('[data-add-task]').forEach(btn => {
+        btn.onclick = () => renderAddTaskForm(btn.dataset.addTask);
+      });
+
+      document.querySelectorAll('.task-card').forEach(card => {
+        card.addEventListener('dragstart', (e) => {
+          activeDragTaskId = String(card.dataset.taskId || '');
+          if (e.dataTransfer) {
+            e.dataTransfer.setData('text/plain', activeDragTaskId);
+            e.dataTransfer.effectAllowed = 'move';
+            try { e.dataTransfer.setDragImage(card, 12, 12); } catch {}
+          }
+          card.classList.add('dragging');
+        });
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+          document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
+          activeDragTaskId = '';
+        });
+      });
+
+      const dropzones = document.querySelectorAll('.kanban-col, [id^="col-"]');
+      dropzones.forEach(zone => {
+        const container = zone.classList.contains('kanban-col') ? zone : zone.closest('.kanban-col');
+        const getStatus = () => container?.dataset?.column;
+
+        zone.ondragover = (e) => {
+          e.preventDefault();
+          if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+          if (container) container.classList.add('drag-over');
+        };
+        zone.ondragenter = (e) => {
+          e.preventDefault();
+          if (container) container.classList.add('drag-over');
+        };
+        zone.ondragleave = (e) => {
+          if (container && !container.contains(e.relatedTarget)) container.classList.remove('drag-over');
+        };
+        zone.ondrop = async (e) => {
+          e.preventDefault();
+          if (container) container.classList.remove('drag-over');
+
+          const droppedId = String(e.dataTransfer?.getData('text/plain') || activeDragTaskId || '').trim();
+          const newStatus = getStatus();
+          if (!droppedId || !newStatus) return;
+
+          const { error } = await supabaseClient.from('todos').update({ status: newStatus, completed: newStatus === 'done' }).eq('id', droppedId);
+          if (!error) {
+            const idx = tasks.findIndex(t => String(t.id) === droppedId);
+            if (idx >= 0) {
+              tasks[idx].status = newStatus;
+              tasks[idx].completed = newStatus === 'done';
+            }
+            renderTaskColumns();
+          } else {
+            alert(`Drag/drop update failed: ${error.message}`);
+          }
+          activeDragTaskId = '';
+        };
+      });
+
+    }
+
+    function bindTaskActionHandlers() {
+      if (hasBoundTaskActionHandlers) return;
+      hasBoundTaskActionHandlers = true;
+
+      document.addEventListener('click', async (e) => {
+        const menuToggle = e.target.closest('[data-menu-toggle]');
+        const editBtn = e.target.closest('[data-edit-task]');
+        const deleteBtn = e.target.closest('[data-delete-task]');
+
+        if (menuToggle) {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = menuToggle.dataset.menuToggle;
+          document.querySelectorAll('[data-task-menu]').forEach(m => {
+            if (m.dataset.taskMenu !== id) m.classList.add('hidden');
+          });
+          const menu = document.querySelector(`[data-task-menu="${id}"]`);
+          if (menu) menu.classList.toggle('hidden');
+          return;
+        }
+
+        if (editBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = String(editBtn.dataset.editTask || '');
+          document.querySelectorAll('[data-task-menu]').forEach(m => m.classList.add('hidden'));
+          openEditModal(id);
+          return;
+        }
+
+        if (deleteBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = String(deleteBtn.dataset.deleteTask || '');
+          document.querySelectorAll('[data-task-menu]').forEach(m => m.classList.add('hidden'));
+          const { error } = await supabaseClient.from('todos').delete().eq('id', id);
+          if (!error) await loadTasks();
+          else alert(`Delete failed: ${error.message}`);
+          return;
+        }
+
+        document.querySelectorAll('[data-task-menu]').forEach(m => m.classList.add('hidden'));
+      });
+    }
+
+    function taskFormFields(task = {}) {
+      return `
+        <input class="w-full glass rounded px-3 py-2 text-sm" name="title" value="${task.title || ''}" placeholder="Task title" required />
+        <div class="grid grid-cols-2 gap-2">
+          <select class="glass rounded px-3 py-2 text-sm" name="category">${['Work','Marketing','Development','Personal'].map(v => `<option ${task.category===v?'selected':''}>${v}</option>`).join('')}</select>
+          <select class="glass rounded px-3 py-2 text-sm" name="priority">${['Urgent','Normal','Someday'].map(v => `<option ${task.priority===v?'selected':''}>${v}</option>`).join('')}</select>
+          <select class="glass rounded px-3 py-2 text-sm" name="track_status">${['On Track','At Risk','Off Track'].map(v => `<option ${task.track_status===v?'selected':''}>${v}</option>`).join('')}</select>
+          <select class="glass rounded px-3 py-2 text-sm" name="status">${TASK_STATUS.map(v => `<option value="${v}" ${task.status===v?'selected':''}>${statusLabel(v)}</option>`).join('')}</select>
+          <input class="glass rounded px-3 py-2 text-sm col-span-2" type="date" name="due_date" value="${task.due_date ? String(task.due_date).slice(0,10) : ''}" />
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" class="px-3 py-2 rounded border border-white/20" data-close-edit>Cancel</button>
+          <button class="px-3 py-2 rounded bg-cyan-500/30 border border-cyan-400/40">Save</button>
+        </div>
+      `;
+    }
+
+    function openEditModal(taskId) {
+      const taskKey = String(taskId || '');
+      const task = tasks.find(t => String(t.id) === taskKey);
+      if (!task) return;
+      const modal = document.getElementById('task-edit-modal');
+      const form = document.getElementById('task-edit-form');
+      form.innerHTML = taskFormFields(task);
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        const status = fd.get('status');
+        const payload = {
+          title: fd.get('title'),
+          category: fd.get('category'),
+          priority: fd.get('priority'),
+          track_status: fd.get('track_status'),
+          status,
+          due_date: fd.get('due_date') || null,
+          completed: status === 'done'
+        };
+        const { error } = await supabaseClient.from('todos').update(payload).eq('id', taskKey);
+        if (!error) {
+          closeEditModal();
+          await loadTasks();
+        } else {
+          alert(`Edit failed: ${error.message}`);
+        }
+      };
+
+      form.querySelector('[data-close-edit]').onclick = closeEditModal;
+      modal.onclick = (e) => { if (e.target === modal) closeEditModal(); };
+    }
+
+    function closeEditModal() {
+      const modal = document.getElementById('task-edit-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.getElementById('task-edit-form').innerHTML = '';
+    }
+
+    async function initTasksTab() {
+      if (hasLoadedTasksTab) return;
+      hasLoadedTasksTab = true;
+
+      const { url, key } = getSupabaseCredentials();
+      if (!url || !key) return;
+      if (!supabaseClient) supabaseClient = window.supabase.createClient(url, key);
+
+      bindTaskActionHandlers();
+      await seedTasksIfNeeded();
+      await loadTasks();
+    }
+
+    function setActiveTab(tab) {
+      const current = document.querySelector('.tab-content:not(.hidden)');
+      if (current && current.id !== `tab-${tab}`) {
+        current.classList.remove('animate-fadeSwapIn');
+        current.classList.add('animate-fadeSwapOut');
+        setTimeout(() => {
+          current.classList.add('hidden');
+          current.classList.remove('animate-fadeSwapOut');
+
+          const next = document.getElementById(`tab-${tab}`);
+          if (!next) return;
+          next.classList.remove('hidden');
+          next.classList.remove('animate-fadeSwapOut');
+          next.classList.add('animate-fadeSwapIn');
+        }, 160);
+      } else {
+        const next = document.getElementById(`tab-${tab}`);
+        if (!next) return;
+        next.classList.remove('hidden');
+        next.classList.add('animate-fadeSwapIn');
+      }
+
+      tabButtons.forEach(btn => {
+        const active = btn.dataset.tab === tab;
+        btn.classList.toggle('active', active);
+      });
+
+      if (tab === 'dashboard') initDashboardTab();
+      if (tab === 'automations') initAutomationsTab();
+      if (tab === 'agents') initAgentsTab();
+      if (tab === 'tasks') initTasksTab();
+      if (tab === 'settings') initSettingsTab();
+    }
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => setActiveTab(btn.dataset.tab));
+    });
+
+    initDashboardTab();
+  </script>
+</body>
+</html>
