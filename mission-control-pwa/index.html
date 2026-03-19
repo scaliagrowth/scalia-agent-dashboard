@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scalia Mission Control</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="card">
+<h1>Scalia Mission Control</h1>
+<p>Tap the button below to load the dashboard (works over the secured tunnel).</p>
+<a id="open-link" class="button" href="https://diamonds-faculty-santa-hunt.trycloudflare.com/mission-control-v2.html" target="_blank">Open Dashboard</a>
+<p class="note">If your school blocks the raw URL, install this as a Web App and use the shortcut icon instead.</p>
+</div>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>

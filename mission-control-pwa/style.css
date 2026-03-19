@@ -1,0 +1,5 @@
+body { font-family: system-ui, sans-serif; background:#0f172a; color:#fff; min-height:100vh; display:flex; justify-content:center; align-items:center; margin:0; }
+.card { max-width:480px; text-align:center; padding:2rem; border-radius:18px; background:linear-gradient(180deg,#1d2939,#111827); box-shadow:0 20px 80px rgba(15,23,42,.5); }
+.button { display:inline-block; padding:.85rem 1.5rem; background:#6366f1; color:#fff; border-radius:999px; text-decoration:none; font-weight:600; transition:transform .2s ease; }
+.button:hover { transform:translateY(-2px); }
+.note { margin-top:1rem; font-size:.9rem; color:#cbd5f5; }
